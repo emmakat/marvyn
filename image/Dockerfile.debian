@@ -1,6 +1,6 @@
-ARG DISTRO=buster
+ARG DISTRO=stable
 ARG SOURCE=debian:${DISTRO}-slim
-ARG MAKEMKV_VERSION=1.16.3
+ARG MAKEMKV_VERSION
 ARG MAKEMKV_DIR=/tmp/makemkv
 ARG LIBDVD_DIR=/tmp/libdvd-pkg
 ARG DEBIAN_FRONTEND=noninteractive
@@ -24,9 +24,15 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install
 FROM libdvd AS makemkv
 ARG MAKEMKV_VERSION
 ARG MAKEMKV_DIR
+ARG DEBIAN_FRONTEND
 WORKDIR /tmp
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends -qq \
-      make g++ gcc pkg-config libavcodec-dev libexpat-dev libssl-dev zlib1g-dev wget ca-certificates && \
+      make g++ gcc pkg-config libavcodec-dev libexpat-dev libssl-dev zlib1g-dev wget ca-certificates
+RUN MAKEMKV_VERSION=${MAKEMKV_VERSION:-$( \
+      wget -q -O- 'https://www.makemkv.com/forum/viewtopic.php?f=3&t=224' \
+      | grep -oP 'href="https?://www.makemkv.com/download/makemkv-bin-\K(.+)(?=.tar.gz")' \
+    )} && \
+    echo MakeMKV version: "${MAKEMKV_VERSION}" && \
     wget -q -O- "https://www.makemkv.com/download/makemkv-oss-${MAKEMKV_VERSION}.tar.gz" | tar -xz --strip-components=1 --one-top-level=makemkv-oss && \
     wget -q -O- "https://www.makemkv.com/download/makemkv-bin-${MAKEMKV_VERSION}.tar.gz" | tar -xz --strip-components=1 --one-top-level=makemkv-bin && \
     cd makemkv-oss && ./configure --disable-gui --prefix="${MAKEMKV_DIR}" -q && \
@@ -47,8 +53,9 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install
       '^libavcodec[0-9]+$' libssl1.1 default-jre-headless ca-certificates-java curl libfaketime \
       dvdbackup genisoimage \
       abcde vorbis-tools lame flac libmusicbrainz-discid-perl libwebservice-musicbrainz-perl glyrc imagemagick eject eyed3 mkcue normalize-audio \
-      ffmpeg libva-drm2 libva2 i965-va-driver \
+      ffmpeg libva-drm2 libva2 \
       sendemail libio-socket-ssl-perl
+RUN [ "$(apt-cache search '^i965-va-driver$' | wc -l)" -eq 0 ] || apt-get install -y --no-install-recommends -qq i965-va-driver
 COPY ./patch-abcde /tmp/patch-abcde
 RUN /tmp/patch-abcde && rm /tmp/patch-abcde
 RUN wget -q -O /usr/local/bin/dvd-duplicate-detector.pl https://www.fabiankeil.de/sourcecode/dvd-duplicate-detector.pl && \
