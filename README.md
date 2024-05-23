@@ -22,7 +22,7 @@ MARVYN is nice:
   * build a Docker image
 * Install:
   ```shell
-  $ sudo apt install docker-compose
+  $ sudo apt-get install docker-compose-plugin
   $ wget -O - https://github.com/git-developer/marvyn/tarball/main | tar --one-top-level=/opt/docker/marvyn --strip-components 1 -xz
   $ /opt/docker/marvyn/image/build
   ```
@@ -34,14 +34,14 @@ MARVYN is nice:
 * Run: _Insert disc_
 
 ## Pre-requisites
-- A linux system with `docker-compose`.
+- A linux system with Docker Compose.
 
 The Docker Compose [documentation](https://docs.docker.com/compose/install/)
 contains a comprehensive guide explaining several install options.
-On debian-based systems, `docker-compose` may be installed by calling
+On debian-based systems, Docker Compose may be installed by calling
 
 ```shell
-$ sudo apt install docker-compose
+$ sudo apt-get install docker-compose-plugin
 ```
 
 
@@ -244,14 +244,14 @@ _Video Servies Conversion_ only.
   ```
 * Start a shell within MARVYN:
   ```shell
-  $ docker-compose -f etc/base.yml run --rm marvyn-base bash
+  $ docker compose -f etc/base.yml run --rm marvyn-base bash
   ```
 
 ### Environment variables
 Environment variables may either be declared in a configuration file
 or as environment variable. For all variables prefixed with `MARVYN_`,
 the environment value takes precedence over the configuration file.
-For all other variables, the default `docker-compose` behavior is applied:
+For all other variables, the default Docker Compose behavior is applied:
 * if a variable is not declared in the configuration file, the value is ignored.
 * if a variable is declared in the configuration file without value,
   the value of the environment variable is used.
