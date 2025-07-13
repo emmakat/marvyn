@@ -22,7 +22,7 @@ MARVYN is nice:
   * build a Docker image
 * Install:
   ```shell
-  $ sudo apt install docker-compose
+  $ sudo apt-get install docker-compose-plugin
   $ wget -O - https://github.com/git-developer/marvyn/tarball/main | tar --one-top-level=/opt/docker/marvyn --strip-components 1 -xz
   $ /opt/docker/marvyn/image/build
   ```
@@ -34,14 +34,14 @@ MARVYN is nice:
 * Run: _Insert disc_
 
 ## Pre-requisites
-- A linux system with `docker-compose`.
+- A linux system with Docker Compose.
 
 The Docker Compose [documentation](https://docs.docker.com/compose/install/)
 contains a comprehensive guide explaining several install options.
-On debian-based systems, `docker-compose` may be installed by calling
+On debian-based systems, Docker Compose may be installed by calling
 
 ```shell
-$ sudo apt install docker-compose
+$ sudo apt-get install docker-compose-plugin
 ```
 
 
@@ -111,7 +111,6 @@ Video conversion uses hardware transcoding.
 
 | Option | Description | Examples | Default |
 | -----  | ----------- | -------- | ------- |
-| Volume Mount `/output` | Output directory | `/media/newstuff:/output` | `../output:/output` |
 | Environment variable `MARVYN_MAKEMKV_KEY` | MakeMKV [registration key](https://www.makemkv.com/buy/). When unset, a beta key is downloaded and used.  | `T-wN2...AE5z` | _none_ |
 | Environment variable `MARVYN_NICENESS` | CPU priority (in terms of the `nice` command) | `-19`..`20` | _none_ (effectively: Default of `nice` command)
 | Environment variable `TZ` | Timezone | `Europe/Berlin` | _none_ |
@@ -168,7 +167,6 @@ documentation for details.
 
 | Option | Description | Examples | Default |
 | -----  | ----------- | -------- | ------- |
-| Volume Mount `/work` | Working directory for temporary files | `/tmp/transcoding:/work` | `../work:/work` |
 | Environment variable `MARVYN_CLEANUP` | Delete temporary files after successful finish? | `yes`, `no` | `yes` |
 
 This configuration uses the _Video Transcoding_ configuration as default.
@@ -204,6 +202,8 @@ _Video Servies Conversion_ only.
 | Option | Description | Examples | Default |
 | -----  | ----------- | -------- | ------- |
 | Environment variable `MARVYN_VIDEO_BITRATE` | Video bitrate | `1280k` | `1280k` |
+| Environment variable `MARVYN_VIDEO_MAXRATE` | Maximum video bitrate | `1280k` | Video bitrate |
+| Environment variable `MARVYN_VIDEO_BUFFERSIZE` | Video buffer size | `2560k` | 2x video bitrate |
 | Environment variable `MARVYN_VIDEO_CODEC` | Video format supported by VAAPI | `h264_vaapi` | `h264_vaapi` |
 | Environment variable `MARVYN_VIDEO_WIDTH` | Video width | `720` | `720` |
 | Environment variable `MARVYN_AUDIO_BITRATE` | Audio bitrate | `128k` | `128k` |
@@ -244,32 +244,47 @@ _Video Servies Conversion_ only.
   ```
 * Start a shell within MARVYN:
   ```shell
-  $ docker-compose -f etc/base.yml run --rm marvyn-base bash
+  $ docker compose -f etc/base.yml run --rm marvyn-base bash
   ```
 
 ### Environment variables
 Environment variables may either be declared in a configuration file
 or as environment variable. For all variables prefixed with `MARVYN_`,
 the environment value takes precedence over the configuration file.
-For all other variables, the default `docker-compose` behavior is applied:
+For all other variables, the default Docker Compose behavior is applied:
 * if a variable is not declared in the configuration file, the value is ignored.
 * if a variable is declared in the configuration file without value,
   the value of the environment variable is used.
 * if a variable is declared in the configuration file with value,
   this value is used and the environment value is ignored.
 
-### Directories for output and work as command line arguments
-By default, the directories for `/output` and `/work` are read from the
-configuration file. Alternatively, it is possible to hand them over as command
-line arguments to a service, e.g.
-
-* `$ bin/transcode-disc-directory /media/input.mp4 /media/output/`
-* `$ bin/transcode-disc-directory /media/input.mp4 /media/output/ /tmp/work/`
-
-Unfortunately, this does not work reliably as long as
-[docker-compose #7270](https://github.com/docker/compose/issues/7270)
-is open: either the command line argument or the configuration file value
-will be chosen randomly. MARVYN knows this bug and will cancel when detected.
+### Configuration of output and work directories
+By default, the directories for `output` and `work` are located in the root
+directory of the installation (on the same level as `bin` and `etc`).
+If that's not appropriate, you have the choice to:
+1. Hand them over as command line arguments to a service:
+    ```console
+    $ bin/transcode-disc-directory /media/input.mp4 /media/output/
+    $ bin/transcode-disc-directory /media/input.mp4 /media/output/ /tmp/work/
+    ```
+2. Set environment variables to change the location:
+    ```console
+    $ export MARVYN_OUTPUT_DIRECTORY=/media/output/
+    $ export MARVYN_WORK_DIRECTORY=/tmp/work/
+    $ bin/transcode-disc-directory /media/input.mp4
+    ```
+3. Use symlinks to redirect them to a different location:
+    ```console
+    $ ln -s /media/output output
+    $ ln -s /tmp/work work
+    $ bin/transcode-disc-directory /media/input.mp4
+    ```
+4. Use bind mounts to mount them to a different location:
+    ```console
+    $ sudo mount --bind /media/output output
+    $ sudo mount --bind /tmp/work work
+    $ bin/transcode-disc-directory /media/input.mp4
+    ```
 
 ### Users, groups and permissions
 MARVYN services run with userid and groupid of the current user.
